@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 The KeyCopy to STL contributors
+
 /* KeyCopy → STL core. Units: inches for specs, millimetres for geometry/mesh. */
 (function (root) {
   'use strict';

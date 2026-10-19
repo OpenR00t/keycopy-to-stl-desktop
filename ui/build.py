@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 The KeyCopy to STL contributors
 """Rebuild dist/index.html (the app's embedded UI) from ui/. Run from anywhere; no dependencies."""
 import pathlib, re
 UI = pathlib.Path(__file__).resolve().parent

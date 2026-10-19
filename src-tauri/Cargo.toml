@@ -3,6 +3,7 @@ name = "keycopy-to-stl"
 version = "1.0.0"
 description = "Turns Flipper Zero Key Copier files into printable STL keys"
 edition = "2021"
+license = "AGPL-3.0-or-later"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

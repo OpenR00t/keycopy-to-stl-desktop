@@ -38,3 +38,9 @@ For an installer with `.keycopy` file association: `cargo install tauri-cli --ve
 - Barlow and Barlow Semi Condensed fonts (embedded in `ui/vendor/fonts.css`): SIL Open Font License 1.1.
 - Specs cross-checked against T. J. Thomas, *Key Bitting Specifications* (2025).
 - Master 1K spacing and depths: Master Lock Technical Manual (7000-0031), p. 25.
+
+## License
+
+Licensed under the GNU Affero General Public License v3.0 or later. See [LICENSE](LICENSE).
+
+Third-party code and assets keep their own licences (see Credits).

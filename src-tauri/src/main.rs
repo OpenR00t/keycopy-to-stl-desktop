@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 The KeyCopy to STL contributors
+
 // KeyCopy to STL: desktop shell. All geometry lives in the bundled UI;
 // this side only provides native dialogs and file I/O.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
