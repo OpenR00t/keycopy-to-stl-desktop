@@ -1,0 +1,8 @@
+# Rust / Tauri build output
+/src-tauri/target/
+/src-tauri/gen/schemas/
+
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini

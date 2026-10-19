@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KeyCopy to STL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E9EDF0; --sheet:#F7F9FA; --ink:#17222D; --ink2:#4A5866; --rule:#C3CCD3; --rule2:#DCE2E7;
+  --brass:#C9A04E; --brass-edge:#7A5A1C; --dim:#2D6A99; --warn:#9A5B00; --err:#A3262A; --ok:#2E6B3F;
+  --field:#FFFFFF; --focus:#2D6A99;
+  --sans:"Barlow", "Helvetica Neue", Arial, sans-serif;
+  --cond:"Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --paper:#1C242B; --sheet:#232D35; --ink:#E4E9ED; --ink2:#A7B3BD; --rule:#3E4C57; --rule2:#2F3A44;
+  --brass:#C9A04E; --brass-edge:#E2C27E; --dim:#86B9E0; --warn:#E3A84E; --err:#F08A8D; --ok:#7CC593; --field:#1A2127; --focus:#86B9E0; } }
+:root[data-theme="dark"]{
+  --paper:#1C242B; --sheet:#232D35; --ink:#E4E9ED; --ink2:#A7B3BD; --rule:#3E4C57; --rule2:#2F3A44;
+  --brass:#C9A04E; --brass-edge:#E2C27E; --dim:#86B9E0; --warn:#E3A84E; --err:#F08A8D; --ok:#7CC593; --field:#1A2127; --focus:#86B9E0; }
+*{box-sizing:inherit}
+[hidden]{display:none !important}
+html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%}
+body{margin:0; min-height:100%; background:var(--paper); color:var(--ink); font:16px/1.45 var(--sans); -webkit-font-smoothing:antialiased}
+button,input,select{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--focus); outline-offset:2px}
+
+.app{display:grid; grid-template-columns:minmax(300px,360px) 1fr; min-height:100vh}
+aside{border-right:1px solid var(--rule); padding:22px 22px 40px; display:flex; flex-direction:column; gap:22px; background:var(--paper)}
+main{padding:22px clamp(14px,3vw,36px) 40px; min-width:0; display:flex; flex-direction:column; gap:16px}
+
+h1{font:600 22px/1.1 var(--cond); letter-spacing:.01em; margin:0}
+.lede{margin:6px 0 0; color:var(--ink2); font-size:14.5px}
+section h2{font:600 15px/1.2 var(--sans); margin:0 0 10px}
+.hint{color:var(--ink2); font-size:13.5px; margin:6px 0 0}
+label{display:block; font-size:14px; color:var(--ink2); margin:0 0 4px}
+select,input[type=number]{width:100%; background:var(--field); border:1px solid var(--rule); border-radius:4px; padding:7px 9px; min-height:38px}
+.row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
+.field{margin-bottom:10px}
+
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; border:1px solid var(--ink); background:var(--ink); color:var(--sheet); border-radius:4px; padding:9px 14px; font-weight:600; cursor:pointer; min-height:40px}
+.btn.secondary{background:transparent; color:var(--ink)}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+.btn.small{min-height:32px; padding:5px 10px; font-weight:500; font-size:14px}
+
+.drop{border:1.5px dashed var(--rule); border-radius:6px; padding:14px; display:flex; flex-direction:column; gap:10px; align-items:flex-start}
+.drop.over{border-color:var(--dim); background:color-mix(in srgb, var(--dim) 8%, transparent)}
+.files{display:flex; flex-wrap:wrap; gap:6px}
+.files button{border:1px solid var(--rule); background:var(--field); border-radius:999px; padding:3px 11px; font-size:13.5px; cursor:pointer}
+.files button[aria-pressed="true"]{border-color:var(--ink); background:var(--ink); color:var(--sheet)}
+
+.bitting{display:flex; flex-wrap:wrap; gap:6px}
+.bitting .cut{display:flex; flex-direction:column; align-items:center; width:44px}
+.bitting .cut span{font:500 12px var(--cond); color:var(--ink2)}
+.bitting input{width:44px; text-align:center; font:600 20px var(--cond); padding:4px 0; min-height:40px}
+
+.choice{display:flex; flex-direction:column; gap:6px}
+.choice label{display:flex; gap:9px; align-items:flex-start; color:var(--ink); font-size:14.5px; cursor:pointer; margin:0; padding:7px 9px; border:1px solid var(--rule2); border-radius:5px; background:var(--field)}
+.choice label small{display:block; color:var(--ink2); font-size:13px}
+.choice input{margin-top:4px; accent-color:var(--ink)}
+.choice label.disabled{opacity:.5; cursor:not-allowed}
+
+.msgs{display:flex; flex-direction:column; gap:6px; margin-top:8px}
+.msg{font-size:13.5px; padding:6px 9px; border-left:3px solid; background:var(--field); border-radius:0 4px 4px 0}
+.msg.error{border-color:var(--err)} .msg.warn{border-color:var(--warn)} .msg.info{border-color:var(--dim)}
+
+details{border-top:1px solid var(--rule); padding-top:14px}
+summary{cursor:pointer; font-weight:600; font-size:15px; list-style-position:outside}
+details[open] summary{margin-bottom:12px}
+.check{display:flex; gap:8px; align-items:center; font-size:14.5px; color:var(--ink)}
+
+/* sheet */
+.toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between}
+.seg{display:inline-flex; border:1px solid var(--rule); border-radius:5px; overflow:hidden; background:var(--field)}
+.seg button{border:0; background:transparent; padding:7px 14px; cursor:pointer; font-weight:500}
+.seg button[aria-pressed="true"]{background:var(--ink); color:var(--sheet)}
+.exports{display:flex; gap:8px; flex-wrap:wrap}
+.sheet{background:var(--sheet); border:1px solid var(--rule); border-radius:6px; position:relative; min-height:360px; overflow:hidden}
+.drawing{width:100%; overflow-x:auto}
+.drawing{padding:8px 0 4px}
+.drawing svg{display:block; width:100%; height:auto; max-height:440px; margin:0 auto}
+.sheet.stale .drawing, .sheet.stale #view3d{opacity:.3}
+#view3d{width:100%; height:min(62vh,560px); display:block; touch-action:none; cursor:grab}
+#view3d:active{cursor:grabbing}
+.empty{display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:12px; padding:48px clamp(18px,5vw,64px); min-height:360px; max-width:640px}
+.empty p{margin:0; color:var(--ink2)}
+.empty strong{font:600 26px/1.15 var(--cond); color:var(--ink)}
+
+.titleblock{display:grid; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); border-top:1px solid var(--rule)}
+.titleblock div{padding:8px 12px; border-right:1px solid var(--rule2); border-bottom:1px solid var(--rule2)}
+.titleblock dt{font-size:12px; color:var(--ink2)}
+.titleblock dd{margin:0; font:600 16px/1.25 var(--cond)}
+.titleblock .good{color:var(--ok)} .titleblock .bad{color:var(--err)}
+
+.table-wrap{overflow-x:auto; border:1px solid var(--rule); border-radius:6px; background:var(--sheet)}
+table{border-collapse:collapse; width:100%; font:15px var(--cond); font-variant-numeric:tabular-nums}
+th,td{padding:7px 12px; text-align:right; border-bottom:1px solid var(--rule2); white-space:nowrap}
+th{font:500 13px var(--sans); color:var(--ink2); background:color-mix(in srgb, var(--rule2) 40%, transparent)}
+th:first-child,td:first-child{text-align:left}
+tbody tr:last-child td{border-bottom:0}
+
+.notes{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; font-size:14px; color:var(--ink2)}
+.notes h3{font:600 15px var(--sans); color:var(--ink); margin:0 0 4px}
+.notes p{margin:0}
+.toast{position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:var(--ink); color:var(--sheet); padding:9px 16px; border-radius:5px; font-size:14.5px; box-shadow:0 4px 18px rgba(0,0,0,.18); opacity:0; pointer-events:none; transition:opacity .2s}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+
+@media (max-width:880px){
+  .app{grid-template-columns:1fr}
+  aside{border-right:0; border-bottom:1px solid var(--rule)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <div>
+    <h1>KeyCopy to STL</h1>
+    <p class="lede">Turns a Flipper Zero Key Copier file into a printable, watertight key.</p>
+  </div>
+
+  <section>
+    <h2>Key file</h2>
+    <div class="drop" id="drop">
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button class="btn" id="openBtn" type="button">Open .keycopy</button>
+        <button class="btn secondary" id="openDirBtn" type="button" hidden>Open folder</button>
+      </div>
+      <input type="file" id="fileInput" accept=".keycopy,text/plain" multiple hidden>
+      <span class="hint" style="margin:0" id="dropHint">Or drop files here. On the Flipper they’re in <em>apps_data/key_copier</em> on the SD card.</span>
+      <div class="files" id="files"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Key</h2>
+    <div class="field">
+      <label for="fmt">Format</label>
+      <select id="fmt"></select>
+    </div>
+    <label>Bitting, bow to tip</label>
+    <div class="bitting" id="bitting"></div>
+    <div class="msgs" id="msgs"></div>
+  </section>
+
+  <section>
+    <h2>How was this bitting found?</h2>
+    <div class="choice" id="source">
+      <label><input type="radio" name="src" value="app" checked><span>Measured with the Flipper<small>Cuts follow the app’s on-screen template, which is what you lined the key up against.</small></span></label>
+      <label id="specLabel"><input type="radio" name="src" value="spec"><span>Typed in from a key code<small>Cuts follow the published depth and spacing spec.</small></span></label>
+    </div>
+    <div class="msgs" id="srcMsgs"></div>
+  </section>
+
+  <section>
+    <h2>Keyway</h2>
+    <div class="field">
+      <label for="ward">Blade cross-section</label>
+      <select id="ward"></select>
+    </div>
+    <div class="row">
+      <div class="field" id="thickField"><label for="thick">Blade thickness (mm)</label><input id="thick" type="number" step="0.05" min="0.8" max="4" value="2.0"></div>
+      <div class="field" id="fitField"><label for="fit">Keyway clearance (mm)</label><input id="fit" type="number" step="0.025" min="0" max="0.4" value="0.10"></div>
+    </div>
+    <p class="hint" id="wardHint"></p>
+    <div class="msgs" id="printMsgs"></div>
+  </section>
+
+  <details id="printDetails">
+    <summary>Head and print adjustments</summary>
+    <div class="row">
+      <div class="field"><label for="head">Head style</label><select id="head"><option value="shield">Kwikset-style shield</option><option value="round">Rounded tab</option></select></div>
+      <div class="field" id="cutField" style="align-self:end"><label class="check" style="min-height:38px"><input type="checkbox" id="cutouts" checked> Head cutouts</label></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="bowLen">Head length (mm)</label><input id="bowLen" type="number" step="1" min="10" max="60" value="24"></div>
+      <div class="field"><label for="bowH">Head width (mm)</label><input id="bowH" type="number" step="1" min="10" max="60" value="21"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="bowT">Head thickness (mm)</label><input id="bowT" type="number" step="0.1" min="1.5" max="8" value="3.0"></div>
+      <div class="field" id="holeField"><label for="hole">Ring hole (mm, 0 = none)</label><input id="hole" type="number" step="0.5" min="0" max="12" value="5"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="neck">Head standoff (mm)</label><input id="neck" type="number" step="0.5" min="0" max="15" value="0"></div>
+      <div class="field"><label for="dOff">Extra cut depth (mm)</label><input id="dOff" type="number" step="0.02" min="-0.3" max="0.5" value="0"></div>
+    </div>
+    <p class="hint" style="margin-top:0">Standoff moves the head back from the shoulder; tip-stopped keys need some so the head clears the lock face. Extra cut depth deepens every cut to compensate for a printer that runs fat.</p>
+    <div class="row" style="margin-top:4px">
+      <div class="field"><label for="face">Face on the bed</label><select id="face"><option value="auto">Automatic</option><option value="front">Front</option><option value="back">Back</option></select></div>
+      <div class="field"><label for="fillGap">Fill teeth gap up to (mm)</label><input id="fillGap" type="number" step="0.05" min="0" max="1" value="0.3"></div>
+    </div>
+    <p class="hint" style="margin-top:0">Automatic puts down the face that supports the teeth best. Some keyways leave the teeth slightly above that face; gaps up to the limit are filled so the teeth start on the first layer.</p>
+  </details>
+</aside>
+
+<main>
+  <div class="toolbar">
+    <div class="seg" role="group" aria-label="View">
+      <button type="button" id="v2d" aria-pressed="true">Drawing</button>
+      <button type="button" id="v3d" aria-pressed="false">3D</button>
+    </div>
+    <div class="exports" id="exports">
+      <button class="btn" id="dlStl" type="button" disabled>Download STL</button>
+      <button class="btn secondary" id="dlDxf" type="button" disabled>Download DXF outline</button>
+      <button class="btn secondary" id="dlAll" type="button" hidden>Export all keys</button>
+    </div>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <div class="empty" id="empty">
+      <strong>Open a .keycopy file to start</strong>
+      <p>Every Key Copier format is supported, including double-sided car keys and tip-stopped keys. You can also pick a format above and type a bitting.</p>
+      <button class="btn secondary" id="sample" type="button">Load an example Kwikset key</button>
+    </div>
+    <div class="drawing" id="drawing" hidden></div>
+    <canvas id="view3d" hidden></canvas>
+    <dl class="titleblock" id="titleblock" hidden></dl>
+  </div>
+
+  <div class="table-wrap" id="tableWrap" hidden><table id="cutTable"></table></div>
+
+  <div class="notes">
+    <div><h3>Printing</h3><p>Print flat at 100% infill with 0.1–0.12 mm layers. PETG or a tough PLA holds up best. If the key binds in the keyway, raise the clearance before touching anything else.</p></div>
+    <div><h3>What the STL contains</h3><p>One closed, manifold solid in millimetres, already lying flat on the bed. The 2D DXF outline is the side profile for CAD or laser work.</p></div>
+    <div><h3>Limits</h3><p>Flipper measurements are only as precise as your alignment on its screen. A printed key is for occasional use; turn it gently, and have a locksmith cut a metal copy for daily use.</p></div>
+  </div>
+</main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>/*CORE*/</script>
+<script>
+const WARD = /*WARD*/;
+const K = window.KeyCore, IN = 25.4;
+const $ = (id) => document.getElementById(id);
+const state = { started: false, files: [], active: -1, fmt: null, bitting: [], name: 'key', view: '2d', result: null, wardTouched: false };
+
+// ---------- desktop shell (Tauri): native dialogs and direct file writes ----------
+const DESK = (window.__TAURI__ && window.__TAURI__.core) ? window.__TAURI__.core : null;
+if (DESK) {
+  document.documentElement.classList.add('desktop');
+  $('dlStl').textContent = 'Save STL'; $('dlDxf').textContent = 'Save DXF outline';
+  $('openDirBtn').hidden = false;
+  $('dropHint').textContent = 'Or drop files here, or open a whole folder such as the Flipper’s SD card.';
+}
+const errText = (e) => (typeof e === 'string' ? e : (e && e.message) || String(e));
+
+// ---------- saving: native dialog in the desktop app, plain download link in a browser ----------
+async function saveFile(filename, bytes) {
+  if (DESK) {
+    try { const p = await DESK.invoke('save_file', { name: filename, data: Array.from(bytes) }); if (p) toast('Saved ' + p); }
+    catch (e) { toast(errText(e)); }
+    return;
+  }
+  const blob = new Blob([bytes], { type: 'application/octet-stream' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  toast('Downloaded ' + filename);
+}
+let toastT; function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 4200); }
+
+// ---------- controls ----------
+function fillFormats() {
+  const sel = $('fmt'); sel.innerHTML = '';
+  const groups = {};
+  for (const f of K.FORMATS) (groups[f.sides === 2 ? 'Double-sided' : 'Single-sided'] ||= []).push(f);
+  for (const [g, list] of Object.entries(groups)) {
+    const og = document.createElement('optgroup'); og.label = g;
+    for (const f of list) { const o = document.createElement('option'); o.value = f.id; o.textContent = `${f.mfr} ${f.id}  (${f.pins} cuts${f.tip ? ', tip stop' : ''})`; og.appendChild(o); }
+    sel.appendChild(og);
+  }
+  const ws = $('ward'); ws.innerHTML = '';
+  const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; ws.appendChild(o); };
+  add('flat', 'Flat blade (no warding)');
+  const og = {};
+  for (const k of Object.keys(WARD)) { const fam = k.split(' ')[0]; (og[fam] ||= []).push(k); }
+  for (const [fam, list] of Object.entries(og)) { const g = document.createElement('optgroup'); g.label = fam; for (const k of list) { const o = document.createElement('option'); o.value = k; o.textContent = k + ' keyway'; g.appendChild(o); } ws.appendChild(g); }
+}
+
+function setFormat(f, bitting, quiet, raw) {
+  if (!quiet) state.started = true;
+  state.fmt = f; $('fmt').value = f.id;
+  const a = f.app;
+  bitting = raw ? (bitting || []) : (bitting || []).map((d) => Math.max(a.min, Math.min(a.max, d)));
+  state.bitting = (bitting.length ? bitting.slice(0, f.pins) : []).concat(Array(Math.max(0, f.pins - (bitting || []).length)).fill(a.min));
+  const box = $('bitting'); box.innerHTML = '';
+  state.bitting.forEach((d, i) => {
+    const w = document.createElement('div'); w.className = 'cut';
+    const inp = document.createElement('input'); inp.type = 'number'; inp.min = a.min; inp.max = a.max; inp.step = 1; inp.value = d; inp.setAttribute('aria-label', 'Cut ' + (i + 1));
+    inp.addEventListener('input', () => { state.started = true; const v = parseInt(inp.value, 10); if (Number.isFinite(v)) { state.bitting[i] = v; update(); } });
+    const s = document.createElement('span'); s.textContent = i + 1;
+    w.append(inp, s); box.appendChild(w);
+  });
+  if (!state.wardTouched) $('ward').value = f.sides === 2 ? 'flat' : (f.warding || 'flat');
+  if (f.tip && +$('neck').value === 0) $('neck').value = 3; else if (!f.tip && +$('neck').value === 3) $('neck').value = 0;
+  const specOk = !!f.spec;
+  $('specLabel').classList.toggle('disabled', !specOk);
+  $('specLabel').querySelector('input').disabled = !specOk;
+  if (!specOk) document.querySelector('input[name=src][value=app]').checked = true;
+  update();
+}
+
+function opts() {
+  const src = document.querySelector('input[name=src]:checked').value;
+  return {
+    source: src, warding: $('ward').value, thickness: +$('thick').value || 2, fit: Math.max(0, +$('fit').value || 0),
+    bowLength: +$('bowLen').value || 24, bowHeight: +$('bowH').value || 24, bowThickness: +$('bowT').value || 3,
+    holeDiameter: Math.max(0, +$('hole').value || 0), headStyle: $('head').value, cutouts: $('cutouts').checked, neck: (+$('neck').value || 0) / IN, depthOffset: (+$('dOff').value || 0) / IN, flip: { auto: undefined, front: false, back: true }[$('face').value], flatBed: Math.max(0, +$('fillGap').value || 0),
+  };
+}
+
+// Published cut angle and root width are used in both modes when known (the app approximates them for screen resolution).
+function withSpecGeometry(f, o) {
+  if (f.spec && f.spec.angle) o.angle = f.spec.angle;
+  if (f.spec && f.spec.root) o.root = f.spec.root;
+  return o;
+}
+
+// ---------- main update ----------
+let upT;
+function update() { clearTimeout(upT); upT = setTimeout(run, 30); }
+function run() {
+  const f = state.fmt; if (!f || !state.started) return;
+  const o = opts();
+  const flat = o.warding === 'flat';
+  $('holeField').hidden = o.headStyle !== 'round'; $('cutField').hidden = o.headStyle !== 'shield';
+  $('thickField').hidden = !flat; $('fitField').hidden = flat;
+  $('wardHint').textContent = flat
+    ? (f.sides === 2 ? 'Double-sided keys use a flat blade. Match the thickness to your original key; most automotive blanks are 2.0–2.3 mm.' : 'A flat blade only enters an open keyway. Pick the keyway profile if your lock has one listed.')
+    : 'Profile traced from the real blank (keygen project, CC0). Clearance shrinks it so a printed blade slides in.';
+  // messages
+  const msgs = K.validate(f, state.bitting);
+  $('msgs').innerHTML = msgs.map((m) => `<div class="msg ${m.level}">${m.msg}</div>`).join('');
+  const sm = [];
+  if (!f.spec) sm.push({ level: 'info', msg: `No published ${f.id} spec has been verified, so both choices use the app’s values.` });
+  else {
+    const d = K.sourceDelta(f, state.bitting);
+    if (d && (d.depth > 0.003 || d.spacing > 0.003)) sm.push({ level: o.source === 'app' ? 'info' : 'warn', msg: `For this format the two differ by up to ${(d.depth * IN).toFixed(2)} mm in depth and ${(d.spacing * IN).toFixed(2)} mm in spacing. Pick the one that matches how you got the numbers.` });
+    else sm.push({ level: 'info', msg: `The app and the published spec agree for ${f.id}${d && d.angle ? ' (the published cut angle is used either way)' : ''}.` });
+    if (f.spec.src) sm.push({ level: 'info', msg: 'Spec source: ' + f.spec.src + '.' });
+  }
+  $('srcMsgs').innerHTML = sm.map((m) => `<div class="msg ${m.level}">${m.msg}</div>`).join('');
+  const hasErr = msgs.some((m) => m.level === 'error');
+  $('sheet').classList.toggle('stale', hasErr);
+  if (hasErr) { $('dlStl').disabled = $('dlDxf').disabled = true; return; }
+  withSpecGeometry(f, o);
+  let r;
+  try { r = K.generate(f, state.bitting, o, WARD, window.ClipperLib); }
+  catch (e) { $('msgs').innerHTML += `<div class="msg error">Couldn’t build this key: ${e.message}</div>`; return; }
+  state.result = r; state.opt = o;
+  const pm = [], face = r.ward.flip ? 'back' : 'front';
+  if (r.ward.filled > 0.001) pm.push({ level: 'info', msg: `The teeth sat ${r.ward.filled.toFixed(2)} mm above the bed on the ${face} face. That gap is filled so they print from the first layer; the bitting strip is ${r.ward.filled.toFixed(2)} mm thicker on that face.` });
+  if (r.ward.bedGap > 0.05) pm.push({ level: 'warn', msg: `The teeth sit ${r.ward.bedGap.toFixed(2)} mm above the bed with the ${face} face down, so their first layers print over air. ${o.flip === undefined ? 'Neither face of this keyway reaches the teeth.' : 'Try Automatic.'} Supports under the teeth, or printing the key standing on its back edge, will give cleaner cuts.` });
+  $('printMsgs').innerHTML = pm.map((m) => `<div class="msg ${m.level}">${m.msg}</div>`).join('');
+  $('empty').hidden = true; $('titleblock').hidden = false; $('tableWrap').hidden = false;
+  $('dlStl').disabled = !r.check.watertight; $('dlDxf').disabled = false;
+  drawSVG(r, f, o); drawTable(r, f, o); drawTitle(r, f, o);
+  setView(state.view);
+}
+
+// ---------- drawing ----------
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function drawSVG(r, f, o) {
+  const ol = r.outline, g = ol.g, bl = ol.bladeLoop, bow = ol.bowLoops[0];
+  const FONT = 'Barlow Semi Condensed, Arial Narrow, sans-serif';
+  const xEnd = Math.max(...bl.map((p) => p[0]));
+  const xMin = Math.min(...bow.map((p) => p[0])), xMax = xEnd;
+  const H = g.blade * IN, cxs = g.xs.map((x) => x * IN);
+  const incMm = cxs.length > 1 ? Math.min(...cxs.slice(1).map((x, i) => x - cxs[i])) : 4;
+  const maxDigits = Math.max(...state.bitting.map((d) => String(d).length));
+  const numFs = Math.min(5.4, (0.92 * incMm) / (0.56 * maxDigits));
+  const yTop = Math.max(H + 3 + numFs * 1.15, ol.cy + ol.bowH / 2 + 0.5), yBot = Math.min(-9.5, ol.cy - ol.bowH / 2 - 0.5);
+  const padL = 2, padR = 3, W = xMax - xMin + padL + padR, Ht = yTop - yBot + 2;
+  const X = (x) => (x - xMin + padL).toFixed(3), Y = (y) => (yTop + 1 - y).toFixed(3);
+  const path = (pts) => 'M' + pts.map((p) => X(p[0]) + ' ' + Y(p[1])).join('L') + 'Z';
+  const outer = [[ol.x0mm, bow[0][1]], ...bl, [ol.x0mm, bow[1][1]], ...bow.slice(2)];
+  const refX = g.tipStop ? r.outline.prof.xEnd * IN : 0;
+  let s = `<svg viewBox="0 0 ${W.toFixed(2)} ${Ht.toFixed(2)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Side profile of the key with cut depths and spacing">`;
+  s += `<path d="${path(outer)} ${ol.bowLoops.slice(1).map(path).join(' ')}" fill="var(--brass)" fill-rule="evenodd" stroke="var(--brass-edge)" stroke-width=".18" stroke-linejoin="round"/>`;
+  // reference line
+  s += `<line x1="${X(refX)}" y1="${Y(yTop - 0.5)}" x2="${X(refX)}" y2="${Y(yBot + 4.2)}" stroke="var(--dim)" stroke-width=".14" stroke-dasharray="1 .5"/>`;
+  s += `<text x="${X(refX)}" y="${Y(yTop - 1.9)}" dx="${g.tipStop ? -0.5 : 0.5}" fill="var(--dim)" font-family="${FONT}" font-size="1.7" text-anchor="${g.tipStop ? 'end' : 'start'}">${g.tipStop ? 'tip stop' : 'shoulder'}</text>`;
+  const lo = Math.min(refX, ...cxs), hi = Math.max(refX, ...cxs), baseY = Math.min(-0.9, ol.cy - ol.bowH / 2) ;
+  const dimY = Math.min(-1.2, bl.reduce((m, p) => Math.min(m, p[1]), 0) - 1.2);
+  s += `<line x1="${X(lo)}" y1="${Y(dimY)}" x2="${X(hi)}" y2="${Y(dimY)}" stroke="var(--dim)" stroke-width=".12"/>`;
+  cxs.forEach((x, i) => {
+    const root = H - g.cuts[i] * IN;
+    s += `<line x1="${X(x)}" y1="${Y(root)}" x2="${X(x)}" y2="${Y(H + 2.2)}" stroke="var(--dim)" stroke-width=".12"/>`;
+    s += `<circle cx="${X(x)}" cy="${Y(root)}" r=".36" fill="var(--dim)"/>`;
+    s += `<text x="${X(x)}" y="${Y(H + 2.8)}" fill="var(--ink)" font-family="${FONT}" font-weight="700" font-size="${numFs.toFixed(2)}" text-anchor="middle">${state.bitting[i]}</text>`;
+    if (g.sides === 2) s += `<circle cx="${X(x)}" cy="${Y(g.cuts[i] * IN)}" r=".36" fill="var(--dim)"/>`;
+    s += `<line x1="${X(x)}" y1="${Y(dimY + 0.6)}" x2="${X(x)}" y2="${Y(dimY - 0.6)}" stroke="var(--dim)" stroke-width=".12"/>`;
+    const dist = (Math.abs(x - refX) / IN).toFixed(3).replace(/^0/, '');
+    s += `<text transform="translate(${X(x)} ${Y(dimY - 1.1)}) rotate(-90)" fill="var(--dim)" font-family="${FONT}" font-size="1.55" text-anchor="end" dominant-baseline="central">${dist}</text>`;
+  });
+  s += `<text x="${X(ol.x0mm + 1.2)}" y="${Y(yBot + 1.2)}" fill="var(--ink2)" font-family="${FONT}" font-size="1.5">Inches from ${g.tipStop ? 'tip' : 'shoulder'}</text>`;
+  s += `</svg>`;
+  $('drawing').innerHTML = s;
+  void baseY;
+}
+
+function drawTable(r, f, o) {
+  const g = r.outline.g, two = g.sides === 2;
+  const refX = g.tipStop ? r.outline.prof.xEnd : 0;
+  let h = `<thead><tr><th>Cut</th><th>Depth</th><th>From ${g.tipStop ? 'tip' : 'shoulder'} (in)</th><th>(mm)</th><th>${two ? 'Cut per side' : 'Root height'} (in)</th><th>(mm)</th></tr></thead><tbody>`;
+  g.xs.forEach((x, i) => {
+    const pos = Math.abs(x - refX), v = two ? g.cuts[i] : g.blade - g.cuts[i];
+    h += `<tr><td>${i + 1}</td><td>${state.bitting[i]}</td><td>${pos.toFixed(4)}</td><td>${(pos * IN).toFixed(2)}</td><td>${v.toFixed(4)}</td><td>${(v * IN).toFixed(2)}</td></tr>`;
+  });
+  $('cutTable').innerHTML = h + '</tbody>';
+}
+
+function drawTitle(r, f, o) {
+  const c = r.check, g = r.outline.g;
+  const cells = [
+    ['Key', esc(state.name)],
+    ['Format', `${esc(f.mfr)} ${esc(f.id)}`],
+    ['Bitting', state.bitting.join('-')],
+    ['Depths from', o.source === 'spec' && f.spec ? 'Published spec' : 'Flipper template'],
+    ['Cut angle, root', `${g.angle}°, ${(g.root * IN).toFixed(2)} mm`],
+    ['Blade', `${(g.blade * IN).toFixed(2)} × ${r.ward.thick.toFixed(2)} mm`],
+    ['Bed face', `${r.ward.flip ? 'Back' : 'Front'}${o.flip === undefined ? ' (auto)' : ''}`],
+    ['Mesh', c.watertight ? `<span class="good">Watertight</span>, ${c.triangles.toLocaleString()} triangles` : `<span class="bad">Open edges: ${c.open}</span>`],
+  ];
+  $('titleblock').innerHTML = cells.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+}
+
+// ---------- 3D ----------
+let three = null;
+function init3D() {
+  if (three || !window.THREE) return three;
+  const canvas = $('view3d');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(35, 1, 0.1, 2000);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 0.75));
+  const d1 = new THREE.DirectionalLight(0xffffff, 0.8); d1.position.set(30, 60, 80); scene.add(d1);
+  const d2 = new THREE.DirectionalLight(0xffffff, 0.35); d2.position.set(-40, -30, -60); scene.add(d2);
+  const mat = new THREE.MeshStandardMaterial({ color: 0xc9a04e, metalness: 0.55, roughness: 0.38, flatShading: true });
+  const group = new THREE.Group(); scene.add(group);
+  three = { renderer, scene, cam, mat, group, rx: -0.75, ry: 0.35, dist: 120, mesh: null };
+  let drag = null;
+  canvas.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, rx: three.rx, ry: three.ry }; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove', (e) => { if (!drag) return; three.ry = drag.ry + (e.clientX - drag.x) * 0.01; three.rx = Math.max(-1.55, Math.min(1.55, drag.rx + (e.clientY - drag.y) * 0.01)); render3D(); });
+  canvas.addEventListener('pointerup', () => { drag = null; });
+  canvas.addEventListener('wheel', (e) => { e.preventDefault(); three.dist = Math.max(30, Math.min(400, three.dist * (1 + Math.sign(e.deltaY) * 0.1))); render3D(); }, { passive: false });
+  new ResizeObserver(() => render3D()).observe(canvas);
+  return three;
+}
+function draw3D(r) {
+  const t = init3D(); if (!t) { toast('3D preview needs WebGL.'); return; }
+  if (t.mesh) { t.group.remove(t.mesh); t.mesh.geometry.dispose(); }
+  const pos = new Float32Array(r.mesh.F.length * 9); let k = 0;
+  for (const tri of r.mesh.F) for (const vi of tri) { const v = r.mesh.V[vi]; pos[k++] = v[0]; pos[k++] = v[1]; pos[k++] = v[2]; }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.computeVertexNormals(); geo.computeBoundingBox();
+  const c = new THREE.Vector3(); geo.boundingBox.getCenter(c); geo.translate(-c.x, -c.y, -c.z);
+  t.mesh = new THREE.Mesh(geo, t.mat); t.group.add(t.mesh);
+  const size = new THREE.Vector3(); geo.boundingBox.getSize(size); t.dist = Math.max(size.x, size.y) * 1.9;
+  render3D();
+}
+function render3D() {
+  const t = three; if (!t) return;
+  const canvas = $('view3d'), w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return;
+  t.renderer.setSize(w, h, false); t.cam.aspect = w / h; t.cam.updateProjectionMatrix();
+  t.group.rotation.set(t.rx, t.ry, 0);
+  t.cam.position.set(0, 0, t.dist); t.cam.lookAt(0, 0, 0);
+  t.renderer.render(t.scene, t.cam);
+}
+function setView(v) {
+  state.view = v; $('v2d').setAttribute('aria-pressed', v === '2d'); $('v3d').setAttribute('aria-pressed', v === '3d');
+  const has = !!state.result;
+  $('drawing').hidden = !(has && v === '2d'); $('view3d').hidden = !(has && v === '3d');
+  if (has && v === '3d') draw3D(state.result);
+}
+
+// ---------- files ----------
+async function loadFiles(list) {
+  const texts = [];
+  for (const file of list) { try { texts.push({ name: file.name, text: await file.text() }); } catch (e) { toast(file.name + ': ' + errText(e)); } }
+  loadTexts(texts);
+}
+function loadTexts(items) {
+  let added = 0;
+  for (const it of items) {
+    const name = it.name.replace(/\.keycopy$/i, '');
+    try { state.files.push({ name, parsed: K.parseKeycopy(it.text) }); added++; }
+    catch (e) { toast(name + ': ' + errText(e)); }
+  }
+  if (added) selectFile(state.files.length - added);
+  if (added > 1) toast(`Loaded ${added} keys`);
+  $('dlAll').hidden = !(DESK && state.files.length > 1);
+}
+function selectFile(i) {
+  state.active = i; const fobj = state.files[i], p = fobj.parsed; state.name = fobj.name;
+  $('files').innerHTML = state.files.map((f, j) => `<button type="button" aria-pressed="${j === i}" data-i="${j}">${esc(f.name)}</button>`).join('');
+  if (!p.format) { toast(`“${p.formatName}” isn’t a known format. Pick the closest one and check the cuts.`); setFormat(state.fmt || K.FORMATS[0], p.bitting); }
+  else setFormat(p.format, p.bitting, false, true);
+  setView(state.view);
+}
+$('files').addEventListener('click', (e) => { const b = e.target.closest('button[data-i]'); if (b) selectFile(+b.dataset.i); });
+$('openBtn').addEventListener('click', async () => {
+  if (!DESK) { $('fileInput').click(); return; }
+  try { loadTexts(await DESK.invoke('open_keycopy_files')); } catch (e) { toast(errText(e)); }
+});
+$('openDirBtn').addEventListener('click', async () => {
+  try { loadTexts(await DESK.invoke('open_keycopy_folder')); } catch (e) { toast(errText(e)); }
+});
+$('fileInput').addEventListener('change', (e) => { loadFiles([...e.target.files]); e.target.value = ''; });
+['dragenter', 'dragover'].forEach((ev) => document.addEventListener(ev, (e) => { e.preventDefault(); $('drop').classList.add('over'); }));
+['dragleave', 'drop'].forEach((ev) => document.addEventListener(ev, (e) => { e.preventDefault(); if (ev === 'drop' || e.target === document.documentElement) $('drop').classList.remove('over'); }));
+document.addEventListener('drop', (e) => { if (e.dataTransfer && e.dataTransfer.files.length) loadFiles([...e.dataTransfer.files]); });
+
+$('sample').addEventListener('click', () => { state.name = 'example'; setFormat(K.byId.KW1, [2, 4, 5, 3, 1]); setView('2d'); });
+$('fmt').addEventListener('change', () => { if (state.active < 0) state.name = 'key'; setFormat(K.byId[$('fmt').value], state.bitting); setView(state.view); });
+$('ward').addEventListener('change', () => { state.wardTouched = true; update(); });
+document.querySelectorAll('input[name=src]').forEach((r) => r.addEventListener('change', update));
+['thick', 'fit', 'bowLen', 'bowH', 'bowT', 'hole', 'neck', 'dOff', 'face', 'fillGap', 'head', 'cutouts'].forEach((id) => $(id).addEventListener('input', update));
+$('v2d').addEventListener('click', () => setView('2d'));
+$('v3d').addEventListener('click', () => setView('3d'));
+const base = () => `${state.name}-${state.fmt.id}-${state.bitting.join('')}`.replace(/[^\w.-]+/g, '_');
+$('dlStl').addEventListener('click', () => { if (state.result) saveFile(base() + '.stl', K.toSTL(state.result.mesh, base())); });
+$('dlAll').addEventListener('click', async () => {
+  const base = opts(), out = [], skipped = [], used = new Set();
+  state.files.forEach((fo, i) => {
+    const active = i === state.active;
+    const fmt = active ? state.fmt : fo.parsed.format, bitting = active ? state.bitting : fo.parsed.bitting;
+    if (!fmt || K.validate(fmt, bitting).some((m) => m.level === 'error')) { skipped.push(fo.name); return; }
+    const o = { ...base };
+    if (!(state.wardTouched && fmt.id === state.fmt.id)) o.warding = fmt.sides === 2 ? 'flat' : (fmt.warding || 'flat');
+    if (fmt.tip !== state.fmt.tip) o.neck = fmt.tip ? 3 / IN : 0;
+    if (!fmt.spec) o.source = 'app';
+    const r = K.generate(fmt, bitting, withSpecGeometry(fmt, o), WARD, window.ClipperLib);
+    if (!r.check.watertight) { skipped.push(fo.name); return; }
+    let name = fo.name.replace(/[^\w.-]+/g, '_') || 'key', n = 2;
+    while (used.has(name)) name = `${fo.name}-${n++}`;
+    used.add(name);
+    out.push({ name: name + '.stl', data: Array.from(K.toSTL(r.mesh, name)) });
+  });
+  if (!out.length) { toast('None of the loaded keys can be built. Check their cuts.'); return; }
+  try {
+    const dir = await DESK.invoke('save_many', { files: out });
+    if (dir) toast(`Saved ${out.length} key${out.length === 1 ? '' : 's'} to ${dir}` + (skipped.length ? `. Skipped: ${skipped.join(', ')}` : ''));
+  } catch (e) { toast(errText(e)); }
+});
+$('dlDxf').addEventListener('click', () => { if (state.result) saveFile(base() + '.dxf', new TextEncoder().encode(K.toDXF(state.result.outline))); });
+
+fillFormats();
+setFormat(K.byId.KW1, [], true);
+if (DESK) DESK.invoke('launch_files').then(loadTexts).catch(() => {});
+</script>
+</body>
+</html>
